@@ -1,0 +1,9 @@
+
+### directories
+
+archive/**
+cache/**
+
+### files
+
+*.pyc

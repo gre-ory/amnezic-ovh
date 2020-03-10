@@ -12,17 +12,21 @@ import sys
 # dependencies
 #
 
-root = os.getcwd()
+server_dir = os.getcwd()
+app_dir = os.path.join( server_dir, 'app' )
+lib_dir = os.path.join( server_dir, 'lib', 'flask_1.1.1' )
 
-sys.path.append( "%s/" % root )
-sys.path.append( "%s/app" % root )
-sys.path.append( "%s/lib" % root )
-sys.path.append( "%s/lib/Flask-0.10.1" % root )
-sys.path.append( "%s/lib/itsdangerous-0.24" % root )
-sys.path.append( "%s/lib/Jinja2-2.8" % root )
-sys.path.append( "%s/lib/MarkupSafe-0.23" % root )
-sys.path.append( "%s/lib/Werkzeug-0.11.3" % root )
-sys.path.append( "%s/lib/wheel-0.26.0" % root )
+sys.path.append( "%s" % server_dir )
+sys.path.append( "%s" % app_dir )
+sys.path.append( "%s" % lib_dir )
+sys.path.append( "%s/click" % lib_dir )
+sys.path.append( "%s/flask" % lib_dir )
+sys.path.append( "%s/flask_sqlalchemy" % lib_dir )
+sys.path.append( "%s/itsdangerous" % lib_dir )
+sys.path.append( "%s/jinja2" % lib_dir )
+sys.path.append( "%s/markupsafe" % lib_dir ) 
+sys.path.append( "%s/sqlalchemy" % lib_dir )
+sys.path.append( "%s/werkzeug" % lib_dir )
 
 #
 # run
@@ -92,6 +96,7 @@ def run_with_cgi(application):
 try:
     os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
     sys.dont_write_bytecode = True
+    # print "Content-type: text/html\n\n"
 
     uri = os.environ['REQUEST_URI']
     path = [ p for p in uri.split( '/' ) if p != '' ]

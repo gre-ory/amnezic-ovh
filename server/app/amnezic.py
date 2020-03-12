@@ -53,8 +53,8 @@ class MusicTag( db.Model ):
   music_id = db.Column( db.Integer, db.ForeignKey( 'musics.id' ) )
   tag_id = db.Column( db.Integer, db.ForeignKey( 'tags.id' ) )
 
-  music = db.relationship( Music, backref=db.backref( "music_tags", cascade="all, delete-orphan" ) )
-  tag = db.relationship( Tag, backref=db.backref( "music_tags", cascade="all, delete-orphan" ) )
+  music = db.relationship( Music, backref=db.backref( "music_tags", cascade="all, delete, delete-orphan" ) )
+  tag = db.relationship( Tag, backref=db.backref( "music_tags", cascade="all, delete, delete-orphan" ) )
 
   def __repr__( self ):
     return '<MusicTag %s - %s - %s>' % ( self.id, self.music_id, self.tag_id )
@@ -88,9 +88,51 @@ def create_music( request ):
     if tag is None:
       db.session.add( Tag( name=tag_name ) )
       tag = retrieve_tag_by_name( tag_name )
-    db.session.add( MusicTag( music_id=music.id, tag_id=tag.id ) ) 
+    music.tags.append( tag )
   db.session.commit()  
-  return music    
+  return music   
+  
+def update_music( music_id, request ):
+  if request is None:
+    raise MissingItem( 'request' ) 
+  music = Music.query.filter_by( id=music_id ).first()
+  if music is None:
+    raise ItemNotFound( 'music' )
+  music.title = request.get( 'title', music.title )
+  music.artist = request.get( 'artist', music.artist )
+  music.media = request.get( 'media', music.media )
+  music.cover = request.get( 'cover', music.cover )
+  
+  # tags
+  
+  old_tag_names = [ tag.name for tag in music.tags ]
+  new_tag_names = [ tag_name for tag_name in request.get( 'tags', [] ) ]
+  deleted_tag_names = [ old_tag_name for old_tag_name in old_tag_names if not old_tag_name in new_tag_names ]
+  added_tag_names = [ new_tag_name for new_tag_name in new_tag_names if not new_tag_name in old_tag_names ]
+  
+  # remove deleted tags
+  
+  for tag in music.tags:
+    if tag.name in deleted_tag_names:
+      music.tags.remove( tag )
+  
+  # add new tags
+  
+  for added_tag_name in added_tag_names:
+    tag = retrieve_tag_by_name( added_tag_name )
+    if tag is None:
+      db.session.add( Tag( name=added_tag_name ) )
+      tag = retrieve_tag_by_name( added_tag_name )
+    music.tags.append( tag )
+  
+  # remove unused tags
+        
+  for tag in Tag.query.all():
+    if len( tag.musics ) == 0:
+      db.session.delete( tag )     
+         
+  db.session.commit()  
+  return music     
 
 def retrieve_tags():
   return Tag.query.all()
@@ -125,6 +167,10 @@ def api_music_create():
 def api_music_retrieve( music_id ):
   return json_success( music=music_to_json( retrieve_music( music_id ) ) )
 
+@app.route( '/amnezic/music/<int:music_id>', methods=[ 'POST' ] )
+def api_music_update( music_id ):
+  return json_success( music=music_to_json( update_music( music_id, request.get_json() ) ) )
+
 @app.route( '/amnezic/tag', methods=[ 'GET' ] )
 def api_tag_retrieve_all():
   return json_success( tags=[ tag_to_simple_json( music ) for music in retrieve_tags() ] )
@@ -132,6 +178,10 @@ def api_tag_retrieve_all():
 @app.route( '/amnezic/tag/<int:tag_id>', methods=[ 'GET' ] )
 def api_tag_retrieve( tag_id ):
   return json_success( tag=tag_to_json( retrieve_tag( tag_id ) ) ) 
+
+@app.route( '/amnezic/tag/<int:tag_id>', methods=[ 'POST' ] )
+def api_tag_update( tag_id ):
+  return json_success( tag=tag_to_json( update_tag( tag_id, request.get_json() ) ) ) 
 
 @app.route( '/amnezic/db/drop', methods=[ 'GET' ] )
 def api_db_drop_all():

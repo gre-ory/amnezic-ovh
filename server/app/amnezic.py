@@ -150,6 +150,15 @@ def create_tag( tag_name ):
   db.session.commit()  
   return Tag.query.filter_by( name=tag_name ).first()    
   
+def update_tag( tag_id, request ):
+  if request is None:
+    raise MissingItem( 'request' ) 
+  tag = Tag.query.filter_by( id=tag_id ).first()
+  if tag is None:
+    raise ItemNotFound( 'tag' )
+  tag.name = request.get( 'name', tag.name )
+  db.session.commit()
+  return Tag.query.filter_by( id=tag_id ).first()
 
 #
 # resources
@@ -215,7 +224,7 @@ def music_tag_to_json( music_tag ):
   return to_json( id=music_tag.id, music=music_tag.music, tag=music_tag.tag ) if music_tag is not None else None  
 
 def tag_to_json( tag ):
-  return to_json( id=tag.id, name=tag.name, musics=[ music_to_json( music ) for music in tag.musics ] ) if tag is not None else None
+  return to_json( id=tag.id, name=tag.name, musics=[ music_to_simple_json( music ) for music in tag.musics ] ) if tag is not None else None
 
 def tag_to_simple_json( tag ):
   return to_json( id=tag.id, name=tag.name ) if tag is not None else None

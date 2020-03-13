@@ -267,6 +267,12 @@ def api_db_create_all():
 def api_db_delete():
   delete_tables()
   return json_success()
+  
+@app.after_request
+def after_request_func( response ):
+  headers = response.headers
+  headers['Access-Control-Allow-Origin'] = '*'
+  return response
 
 #
 # adapters

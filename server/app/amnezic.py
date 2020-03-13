@@ -6,6 +6,7 @@
 #
 
 import os
+import random
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 
@@ -58,6 +59,39 @@ class MusicTag( db.Model ):
 
   def __repr__( self ):
     return '<MusicTag %s - %s - %s>' % ( self.id, self.music_id, self.tag_id )
+
+#
+# models
+#
+
+class Answer:
+  
+  def __init__( self, title, hint, correct ):
+    self.title = title or 'Answer'
+    self.hint = hint or 'Hint'
+    self.correct = correct or False
+    
+class Question:
+  
+  def __init__( self, title, music ):
+    self.title = title or 'Question'
+    self.music = music
+    self.answers = []
+  
+  def add_answer( self, answer ):
+    if answer:
+      self.answers.append( answer )
+
+class Game:
+  
+  def __init__( self, nb_question, nb_answer ):
+    self.nb_question = nb_question
+    self.nb_answer = nb_answer
+    self.questions = []
+  
+  def add_question( self, question ):
+    if question:
+      self.questions.append( question )
 
 #
 # services
@@ -160,9 +194,36 @@ def update_tag( tag_id, request ):
   db.session.commit()
   return Tag.query.filter_by( id=tag_id ).first()
 
+def create_game():
+  game = Game( nb_question=4, nb_answer=3 )
+  
+  musics = [ music for music in Music.query.all() if len( music.tags ) > 0 ]
+  musics = random.sample( musics, min( len( musics ), game.nb_question ) )
+  
+  for music in musics:
+    tags = [ tag for tag in music.tags if len( tag.musics ) > 1 ]
+    if len( tags ) > 0:
+      tag = random.choice( tags )
+      question = Question( title=tag.name, music=music )
+      
+      answers = [ answer for answer in tag.musics if answer.id != music.id ]
+      answers = random.sample( answers, min( len( answers ), game.nb_answer - 1 ) )
+      answers.append( music )    
+      random.shuffle( answers )
+      for answer in answers:
+        question.add_answer( Answer( title=answer.title, hint=answer.artist, correct=( answer.id == music.id ) ) )
+        
+      game.add_question( question )
+  
+  return game        
+
 #
 # resources
 #
+
+@app.route( '/amnezic/game', methods=[ 'GET' ] )
+def api_game_create():
+  return json_success( game=game_to_json( create_game() ) )
 
 @app.route( '/amnezic/music', methods=[ 'GET' ] )
 def api_music_retrieve_all():
@@ -229,13 +290,22 @@ def tag_to_json( tag ):
 def tag_to_simple_json( tag ):
   return to_json( id=tag.id, name=tag.name ) if tag is not None else None
   
+def answer_to_json( answer ):  
+  return to_json( title=answer.title, hint=answer.hint, correct=True if answer.correct else None ) if answer is not None else None
+
+def question_to_json( question ):  
+  return to_json( title=question.title, music=music_to_json( question.music ), answers=[ answer_to_json( answer ) for answer in question.answers ] ) if question is not None else None
+
+def game_to_json( game ):  
+  return to_json( nb_question=game.nb_question, nb_answer=game.nb_answer, questions=[ question_to_json( question ) for question in game.questions ] ) if game is not None else None
+  
 def json_success( **kwargs ):
   if len( kwargs ) > 0:
     data = to_json( **kwargs )
     if len( data ) > 0:
       return jsonify( { 'success': 'true', 'data': data } )
     else:
-      return jsonify( { 'error': 'missing %s!' % ','.join( kwargs.keys() ) } ), 404
+      return jsonify( { 'error': 'missing object [%s] for json encoding!' % ','.join( kwargs.keys() ) } ), 404
   return jsonify( { 'success': 'true' } )  
     
 #
@@ -249,15 +319,15 @@ class AppException(Exception):
 
 class MissingItem(Exception):
   def __init__(self, name):
-    super( MissingItem, self ).__init__( 400, 'missing %s!' % name )
+    super( MissingItem, self ).__init__( 400, 'missing item [%s]!' % name )
 
 class InvalidItem(Exception):
   def __init__(self, name):
-    super( InvalidItem, self ).__init__( 400, 'invalid %s!' % name )
+    super( InvalidItem, self ).__init__( 400, 'invalid item [%s]!' % name )
 
 class ItemNotFound(Exception):
   def __init__(self, name):
-    super( ItemNotFound, self ).__init__( 404, '%s not found!' % name )
+    super( ItemNotFound, self ).__init__( 404, 'item [%s] not found!' % name )
 
 @app.errorhandler(Exception)
 def all_exception_handler(error):

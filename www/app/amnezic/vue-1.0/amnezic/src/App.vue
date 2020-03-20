@@ -1,54 +1,60 @@
 <template>
-  <div id="app" class="small-container">
-    <h1>Musics</h1>
+  <v-app>
+    <v-app-bar
+      app
+      color="primary"
+      dark
+    >
+      <div class="d-flex align-center">
+        <v-img
+          alt="Vuetify Logo"
+          class="shrink mr-2"
+          contain
+          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
+          transition="scale-transition"
+          width="40"
+        />
 
-    <music-table :musics="musics"/>
-  </div>
+        <v-img
+          alt="Vuetify Name"
+          class="shrink mt-1 hidden-sm-and-down"
+          contain
+          min-width="100"
+          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
+          width="100"
+        />
+      </div>
+
+      <v-spacer></v-spacer>
+
+      <v-btn
+        href="https://github.com/vuetifyjs/vuetify/releases/latest"
+        target="_blank"
+        text
+      >
+        <span class="mr-2">Latest Release</span>
+        <v-icon>mdi-open-in-new</v-icon>
+      </v-btn>
+    </v-app-bar>
+
+    <v-content>
+      <HelloWorld/>
+    </v-content>
+  </v-app>
 </template>
 
 <script>
-import MusicTable from '@/components/MusicTable.vue'
+import HelloWorld from './components/HelloWorld';
 
 export default {
-  name: 'app',
+  name: 'App',
+
   components: {
-    MusicTable
-  },
-  data () {
-    return {
-      musics: []
-    }
+    HelloWorld,
   },
 
-  mounted () {
-    this.getMusics()
-  },
-
-  methods: {
-
-    async getMusics () {
-      try {
-        const response = await fetch('http://server.amnezic.com/amnezic/music')
-        const json = await response.json()
-        console.log(json)
-        console.log(json.data.musics)
-        this.musics = json.data.musics
-      } catch (error) {
-        console.error(error)
-      }
-    }
-  }
-
-}
+  data: () => ({
+    //
+  }),
+};
 </script>
-
-<style>
-  button {
-    background: #009435;
-    border: 1px solid #009435;
-  }
-
-  .small-container {
-    max-width: 680px;
-  }
-</style>

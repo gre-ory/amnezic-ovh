@@ -1,15 +1,21 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import HelloWorld from '@/components/HelloWorld'
+import MusicTable from '@/components/MusicTable'
+import TagTable from '@/components/TagTable'
 
 Vue.use(Router)
 
 export default new Router({
   routes: [
     {
-      path: '/',
-      name: 'HelloWorld',
-      component: HelloWorld
+      path: '/musics',
+      name: 'MusicTable',
+      component: MusicTable
+    },
+    {
+      path: '/tags',
+      name: 'TagTable',
+      component: TagTable
     }
   ]
 })
